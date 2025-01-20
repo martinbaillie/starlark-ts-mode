@@ -1,0 +1,43 @@
+---
+name: CI
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+    - "main"
+  pull_request:
+    branches:
+    - "main"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        emacs_version: ["29.1", "29.2", "29.3", "29.4", "snapshot", "release-snapshot"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: purcell/setup-emacs@master
+        with:
+          version: ${{ matrix.emacs_version }}
+      - uses: conao3/setup-cask@master
+        with:
+          version: snapshot
+      - name: Run tests
+        run: cask install && cask build && cask exec ert-runner --reporter ert
+
+  all-tests-pass:
+    needs: [test]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check test matrix results
+        if: >-
+          ${{
+               contains(needs.*.result, 'failure')
+            || contains(needs.*.result, 'cancelled')
+            || contains(needs.*.result, 'skipped')
+          }}
+        run: exit 1

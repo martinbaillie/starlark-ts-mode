@@ -1,0 +1,2 @@
+* starlark-ts-mode
+A major mode for Starlark using Tree-sitter.
